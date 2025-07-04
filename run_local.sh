@@ -71,14 +71,29 @@ setup_environment() {
     print_status "Setting up Python environment..."
     
     if [ ! -d ".venv" ]; then
-        print_status "Creating virtual environment..."
-        python3 -m venv .venv
+        print_status "Creating virtual environment with uv..."
+        uv venv .venv
     fi
     
-    print_status "Activating virtual environment and installing dependencies..."
-    source .venv/bin/activate
-    pip install -U pip
-    pip install -e .
+    # Detect OS and activate venv accordingly
+    case "$(uname -s)" in
+        Linux*|Darwin*)
+            ACTIVATE_PATH=".venv/bin/activate"
+            ;;
+        CYGWIN*|MINGW*|MSYS*|Windows_NT)
+            ACTIVATE_PATH=".venv/Scripts/activate"
+            ;;
+        *)
+            print_warning "Unknown OS. Defaulting to Unix-style venv activation."
+            ACTIVATE_PATH=".venv/bin/activate"
+            ;;
+    esac
+    
+    print_status "Activating virtual environment and installing dependencies with uv..."
+    # shellcheck disable=SC1090
+    source "$ACTIVATE_PATH"
+    uv pip install -U pip
+    uv pip install -e .
     
     print_success "Environment setup complete!"
 }
